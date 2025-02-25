@@ -2,7 +2,7 @@
 
 Simple Flask web app that fetches random movie details from **The Movie Database (TMDb)** and provides a Wikipedia page for more information.
 
-This is assignment 2 in CS540: Software Engineering at Emory University taught by Professor John Martin.
+This is assignment 3 in CS540: Software Engineering at Emory University taught by Professor John Martin.
 
 You can view the deployed website [here](https://milestone2-aprak39-909886654275.us-east1.run.app/).
 
