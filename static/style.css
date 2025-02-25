@@ -1,0 +1,257 @@
+:root {
+    --bg-color: #121212;
+    --text-color: #fff;
+    --card-bg: #1e1e1e;
+    --accent-color: #ffcc00;
+    --button-text-color: #000;
+    --nav-link-color: #fff;
+}
+
+body.light-mode {
+    --bg-color: #f9f9f9;
+    --text-color: #000;
+    --card-bg: #fff;
+    --accent-color: #007BFF;
+    --button-text-color: #fff;
+    --nav-link-color: #000;
+}
+
+body {
+    font-family: 'Arial', sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+}
+
+/* Navbar */
+.navbar {
+    width: 100%;
+    background-color: var(--card-bg);
+    padding: 15px 20px;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 100;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.nav-left h1 {
+    color: var(--nav-link-color);
+    margin: 0;
+}
+
+.nav-right {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.nav-right a {
+    color: var(--nav-link-color);
+    text-decoration: none;
+    font-weight: bold;
+}
+
+.nav-right button {
+    background-color: var(--accent-color);
+    color: var(--button-text-color);
+    border: none;
+    padding: 10px 15px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: bold;
+}
+
+.nav-right button:hover {
+    opacity: 0.8;
+}
+
+.theme-toggle {
+    background-color: var(--accent-color);
+    color: var(--button-text-color);
+    border: none;
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.theme-toggle:hover {
+    opacity: 0.8;
+}
+
+.container {
+    background: var(--card-bg);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    width: 90%;
+    max-width: 600px;
+    border-radius: 12px;
+    padding: 20px;
+    margin-top: 80px;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.3);
+    text-align: center;
+}
+
+/* Movie Poster */
+img {
+    width: 100%;
+    border-radius: 8px;
+    margin: 15px 0;
+}
+
+/* Wikipedia Button */
+.text-link {
+    display: inline-block;
+    padding: 12px 18px;
+    background-color: var(--accent-color);
+    color: var(--button-text-color);
+    font-weight: bold;
+    text-decoration: none;
+    border-radius: 6px;
+    transition: 0.3s;
+}
+
+.text-link:hover {
+    background-color: #ffbb00;
+}
+
+/* General Button Styling */
+button {
+    padding: 10px 15px;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: 0.3s;
+}
+
+/* Add to Favorites Button */
+.favorite-btn {
+    background-color: var(--accent-color);
+    color: var(--button-text-color);
+}
+
+/* Remove from Favorites Button */
+.remove-btn {
+    background-color: red;
+    color: white;
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.remove-btn:hover {
+    opacity: 0.8;
+}
+
+.auth-container {
+    align-self: center;
+    background: var(--card-bg);
+    padding: 30px;
+    border-radius: 10px;
+    width: 90%;
+    max-width: 400px;
+    text-align: center;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.3);
+    margin: 100px 0px;
+}
+
+.auth-container h1 {
+    margin-bottom: 15px;
+    color: var(--accent-color);
+}
+
+.auth-container input {
+    width: 90%;
+    padding: 12px;
+    margin-bottom: 12px;
+    border: 1px solid var(--accent-color);
+    border-radius: 6px;
+    background: transparent;
+    color: var(--text-color);
+    font-size: 16px;
+}
+
+.auth-container button {
+    width: 100%;
+    padding: 12px;
+    background: var(--accent-color);
+    color: var(--button-text-color);
+    font-weight: bold;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.auth-container button:hover {
+    opacity: 0.8;
+}
+
+/* Review Form */
+.review-form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.review-form input,
+.review-form textarea {
+    padding: 10px;
+    border: 1px solid var(--accent-color);
+    border-radius: 6px;
+    background: transparent;
+    color: var(--text-color);
+}
+
+.review-form button {
+    padding: 10px;
+    background: var(--accent-color);
+    color: var(--button-text-color);
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.review-form button:hover {
+    opacity: 0.8;
+}
+
+/* Favorites Page */
+.movie {
+    background: var(--card-bg);
+    color: var(--text-color);
+    padding: 15px;
+    /* width: 700px; */
+    border-radius: 10px;
+    /* margin-top: 80px; */
+    margin: 10px 0px;
+    text-align: center;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.movie img {
+    width: 100%;
+    border-radius: 10px;
+}
+
+.error-message {
+    color: red;
+    font-weight: bold;
+    margin-bottom: 10px;
+}

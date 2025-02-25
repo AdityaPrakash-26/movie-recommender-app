@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="movie">
+    <h1>{{ title }}</h1>
+    <p><em>{{ tagline }}</em></p>
+    <p><strong>Genres:</strong> {{ ", ".join(genres) }}</p>
+    <img src="https://image.tmdb.org/t/p/w500{{ poster_path }}" alt="{{ title }} poster">
+    <p><a href="{{ wiki_link }}" target="_blank" class="text-link">More Info on Wikipedia</a></p>
+
+    <button id="favoriteButton" class="favorite-btn"
+        onclick="toggleFavorite('{{ movie_id }}', '{{ title }}', '{{ poster_path }}')">Add to Favorites</button>
+</div>
+
+<h2>Leave a Review</h2>
+<form id="reviewForm" class="review-form">
+    <input type="hidden" name="movie_id" id="movie_id" value="{{ movie_id }}">
+
+    <input type="number" name="rating" id="rating" min="1" max="10" placeholder="Rating (1-10)" required>
+    <textarea name="comment" id="comment" placeholder="Leave a comment" required></textarea>
+    <button type="submit">Submit</button>
+</form>
+
+<h2>Reviews</h2>
+<div id="reviewsList">
+    {% for review in reviews %}
+    <p><strong>{{ review.user_reviews.username }}</strong>: {{ review.rating }}/10 - "{{ review.comment }}"</p>
+    {% endfor %}
+</div>
+
+<script>
+    function toggleFavorite(movieId, title, posterPath) {
+        // console.log(movieId, title, posterPath);
+        let favorites = JSON.parse(localStorage.getItem("favorites")) || [];
+        const index = favorites.findIndex(movie => movie.id === movieId);
+
+        if (index === -1) {
+            favorites.push({ id: movieId, title: title, poster: posterPath });
+            document.getElementById("favoriteButton").textContent = "Remove from Favorites";
+        } else {
+            favorites.splice(index, 1);
+            document.getElementById("favoriteButton").textContent = "Add to Favorites";
+        }
+
+        localStorage.setItem("favorites", JSON.stringify(favorites));
+    }
+
+    function checkFavorite(movieId) {
+        let favorites = JSON.parse(localStorage.getItem("favorites")) || [];
+        const isFavorite = favorites.some(movie => movie.id === movieId);
+        let button = document.getElementById("favoriteButton");
+
+        button.textContent = isFavorite ? "Remove from Favorites" : "Add to Favorites";
+        if (isFavorite) {
+            button.classList.add("remove-btn");
+        } else {
+            button.classList.remove("remove-btn");
+        }
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+        checkFavorite({ movie_id });
+    });
+
+    document.getElementById("reviewForm").addEventListener("submit", function (event) {
+        event.preventDefault();
+
+        let movieId = document.getElementById("movie_id").value;
+        let rating = document.getElementById("rating").value;
+        let comment = document.getElementById("comment").value;
+
+        fetch("/", {
+            method: "POST",
+            body: new URLSearchParams({
+                "movie_id": movieId,
+                "rating": rating,
+                "comment": comment
+            }),
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded"
+            }
+        })
+            .then(response => response.json())
+            .then(data => {
+                let reviewsList = document.getElementById("reviewsList");
+                let newReview = document.createElement("p");
+                newReview.innerHTML = `<strong>${data.username}</strong>: ${data.rating}/10 - "${data.comment}"`;
+                reviewsList.appendChild(newReview);
+
+                document.getElementById("rating").value = "";
+                document.getElementById("comment").value = "";
+            })
+            .catch(error => console.error("Error submitting review:", error));
+    });
+</script>
+{% endblock %}

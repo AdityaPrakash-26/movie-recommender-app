@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Favorite Movies</h1>
+<div id="favoritesList"></div>
+
+<script>
+    function loadFavorites() {
+        let favorites = JSON.parse(localStorage.getItem("favorites")) || [];
+        let list = document.getElementById("favoritesList");
+
+        if (favorites.length === 0) {
+            list.innerHTML = "<p>No favorites added yet.</p>";
+        } else {
+            list.innerHTML = favorites
+                .map(movie => `
+                        <div class="movie">
+                            <h3>${movie.title}</h3>
+                            <img src="https://image.tmdb.org/t/p/w500${movie.poster}" alt="${movie.title}">
+                            <button class="remove-btn" onclick="removeFavorite(${movie.id})">Remove from Favorites</button>
+                        </div>
+                    `)
+                .join("");
+        }
+    }
+
+    function removeFavorite(movieId) {
+        let favorites = JSON.parse(localStorage.getItem("favorites")) || [];
+        movieId = Number(movieId);
+        favorites = favorites.filter(movie => Number(movie.id) !== movieId);
+        localStorage.setItem("favorites", JSON.stringify(favorites));
+        loadFavorites();
+    }
+
+
+
+    document.addEventListener("DOMContentLoaded", function () {
+        loadFavorites();
+    });
+</script>
+{% endblock %}
