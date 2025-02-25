@@ -1,11 +1,9 @@
 from flask import (
     Flask,
-    render_template,
-    redirect,
     request,
-    flash,
-    url_for,
     jsonify,
+    redirect,
+    url_for,
 )
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import (
@@ -20,19 +18,19 @@ import requests
 import os
 from dotenv import load_dotenv
 import random
-from models import db, User, Review
+from flask_cors import CORS
 
 # Load environment variables
 load_dotenv()
 
+# Flask app setup
 app = Flask(__name__)
+CORS(app, supports_credentials=True)
+
 app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL")
-print("============================================")
-print(os.getenv("DATABASE_URL"))
-print("============================================")
 app.config["SECRET_KEY"] = os.getenv("SECRET_KEY")
 
-db.init_app(app)
+db = SQLAlchemy(app)
 
 # Flask-Login setup
 login_manager = LoginManager()
@@ -50,6 +48,29 @@ API_KEY = os.getenv("API_KEY")
 BASE_URL = "https://api.themoviedb.org/3/movie/"
 
 
+# Database Models
+class User(db.Model, UserMixin):
+    """User model for authentication."""
+
+    __tablename__ = "users"
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(80), unique=True, nullable=False)
+
+
+class Review(db.Model):
+    """Movie review model to store user ratings and comments."""
+
+    __tablename__ = "reviews"
+    id = db.Column(db.Integer, primary_key=True)
+    movie_id = db.Column(db.Integer, nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    rating = db.Column(db.Integer, nullable=True)
+    comment = db.Column(db.Text, nullable=True)
+
+    user = db.relationship("User", backref="reviews")
+
+
+# Helper function to get Wikipedia link
 def get_wikipedia_link(title):
     """Fetch Wikipedia link, handling disambiguation pages."""
     search_url = f"https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch={title}&format=json"
@@ -65,128 +86,116 @@ def get_wikipedia_link(title):
     return "#"
 
 
-@app.route("/", methods=["GET", "POST"])
+@app.route("/api/auth-status", methods=["GET"])
+def auth_status():
+    """Check if the user is logged in."""
+    print(current_user.is_authenticated)
+    return jsonify({"isAuthenticated": current_user.is_authenticated})
+
+
+@app.route("/api/movie", methods=["GET"])
 @login_required
-def home():
-    """
-    Display random movie details with Wikipedia link.
-    """
-    movie_ids = [550, 13, 680, 157336]
-    movie_id = random.choice(movie_ids)
-    response = requests.get(f"{BASE_URL}{movie_id}?api_key={API_KEY}")
+def get_random_movie():
+    """Returns a random movie as JSON."""
+    movie_ids = [550, 13, 680, 157336]  # Example movie IDs
+    random_movie_id = random.choice(movie_ids)
+
+    response = requests.get(f"{BASE_URL}{random_movie_id}?api_key={API_KEY}")
     movie = response.json()
 
     wiki_link = get_wikipedia_link(movie["title"])
-    reviews = Review.query.filter_by(movie_id=movie_id).all()
+    reviews = Review.query.filter_by(movie_id=random_movie_id).all()
 
-    if request.method == "POST":
-        submitted_movie_id = int(request.form.get("movie_id"))
-        rating = request.form.get("rating")
-        comment = request.form.get("comment")
-
-        if rating or comment:
-            review = Review(
-                movie_id=submitted_movie_id,
-                user_id=current_user.id,
-                rating=rating,
-                comment=comment,
-            )
-            db.session.add(review)
-            db.session.commit()
-
-            return jsonify(
+    return jsonify(
+        {
+            "id": movie["id"],
+            "title": movie["title"],
+            "tagline": movie.get("tagline", ""),
+            "genres": [genre["name"] for genre in movie.get("genres", [])],
+            "poster_path": movie["poster_path"],
+            "wiki_link": wiki_link,
+            "reviews": [
                 {
-                    "username": current_user.username,
-                    "rating": rating,
-                    "comment": comment,
+                    "username": rev.user.username,
+                    "rating": rev.rating,
+                    "comment": rev.comment,
                 }
-            )
-
-    return render_template(
-        "home.html",
-        title=movie["title"],
-        tagline=movie["tagline"],
-        genres=[genre["name"] for genre in movie["genres"]],
-        poster_path=movie["poster_path"],
-        movie_id=movie_id,
-        wiki_link=wiki_link,
-        reviews=reviews,
+                for rev in reviews
+            ],
+        }
     )
 
 
-@app.route("/login", methods=["GET", "POST"])
+@app.route("/api/review", methods=["POST"])
+@login_required
+def submit_review():
+    """Handles review submission."""
+    data = request.get_json()
+    movie_id = data.get("movie_id")
+    rating = data.get("rating")
+    comment = data.get("comment")
+
+    if not movie_id:
+        return jsonify({"error": "Movie ID is required"}), 400
+
+    review = Review(
+        movie_id=movie_id,
+        user_id=current_user.id,
+        rating=rating,
+        comment=comment,
+    )
+    db.session.add(review)
+    db.session.commit()
+
+    return jsonify(
+        {
+            "message": "Review added!",
+            "username": current_user.username,
+            "rating": rating,
+            "comment": comment,
+        }
+    )
+
+
+@app.route("/api/login", methods=["POST"])
 def login():
-    """User login page"""
-    error_message = None
+    """User login authentication."""
+    data = request.get_json()
+    username = data.get("username")
 
-    if request.method == "POST":
-        username = request.form.get("username")
-        print("============================================")
-        print(username)
-        print("============================================")
-        print("going to query")
-        user = User.query.filter_by(username=username).first()
-        print("============================================")
-        print(user)
-        print("============================================")
-        if user:
-            login_user(user)
-            return redirect(url_for("home"))
-        else:
-            error_message = "Invalid username. Please try again."
+    user = User.query.filter_by(username=username).first()
+    if not user:
+        return jsonify({"error": "Invalid username"}), 401
 
-    return render_template("login.html", error=error_message)
+    login_user(user)
+    return jsonify({"message": "Login successful", "user": user.username})
 
 
-@app.route("/register", methods=["GET", "POST"])
+@app.route("/api/register", methods=["POST"])
 def register():
-    """User registration page."""
-    if request.method == "POST":
-        username = request.form.get("username")
-        print(f"Received username: {username}")
+    """User registration."""
+    data = request.get_json()
+    username = data.get("username")
 
-        try:
-            # print("Checking if database connection is working...")
-            # db.session.execute(text("SELECT 1"))
-            # print("✅ Database connection successful!")
+    existing_user = User.query.filter_by(username=username).first()
+    if existing_user:
+        return jsonify({"error": "Username already exists!"}), 400
 
-            existing_user = User.query.filter_by(username=username).first()
-            print("✅ Query successful!")
+    new_user = User(username=username)
+    db.session.add(new_user)
+    db.session.commit()
 
-            if existing_user:
-                flash("Username already exists!", "danger")
-            else:
-                print("Creating new user...")
-                new_user = User(username=username)
-                db.session.add(new_user)
-                db.session.commit()
-                print("✅ User created!")
-                flash("Account created! You can now log in.", "success")
-                return redirect(url_for("login"))
-
-        except Exception as e:
-            print(f"Database Error: {e}")
-            return f"Database error: {e}", 500
-
-    return render_template("register.html")
+    return jsonify({"message": "Account created! You can now log in."})
 
 
-@app.route("/logout")
+@app.route("/api/logout", methods=["POST"])
 @login_required
 def logout():
-    """Logout the user."""
+    """Logs out the user."""
     logout_user()
-    flash("Logged out successfully!", "info")
-    return redirect(url_for("login"))
-
-
-@app.route("/favorites")
-@login_required
-def favorites():
-    """Display the user's favorite movies."""
-    return render_template("favorites.html")
+    return jsonify({"message": "Logged out successfully"})
 
 
 if __name__ == "__main__":
-    port = int(os.getenv("PORT", 8080))
+    port = int(os.getenv("PORT", 7890))
     app.run(debug=True, host="0.0.0.0", port=port)
