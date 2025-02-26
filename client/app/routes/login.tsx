@@ -28,13 +28,16 @@ export default function LoginPage() {
       console.log(localStorage.getItem("username"));
       navigate("/");
     }
+
+    if (actionData?.error) {
+      setError(actionData.error);
+    }
   }, [actionData]);
 
   return (
     <div className="flex justify-center items-center h-screen">
       <div className="bg-gray-800 p-6 rounded-lg shadow-lg max-w-sm w-full text-center">
         <h1 className="text-2xl font-bold mb-4">Login</h1>
-        {error && <p className="text-red-500">{error}</p>}
         <Form method="post" className="flex flex-col">
           <input
             name="username"
@@ -42,11 +45,12 @@ export default function LoginPage() {
             className="p-2 rounded mb-3 text-white"
             required
             onChange={() => setError(null)}
-          />
+            />
           <button type="submit" className="bg-blue-500 text-white p-2 rounded">
             Login
           </button>
         </Form>
+        {error && <p className="text-red-500">{error}</p>}
         <p className="text-sm mt-3">
           Don't have an account?{" "}
           <a href="/register" className="text-blue-400 hover:underline">
