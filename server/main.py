@@ -91,7 +91,9 @@ def add_cors_headers(response):
     """Ensure CORS headers are applied to every response."""
     response.headers["Access-Control-Allow-Origin"] = "http://localhost:5173"
     response.headers["Access-Control-Allow-Credentials"] = "true"
-    response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
+    response.headers["Access-Control-Allow-Methods"] = (
+        "GET, POST, PUT, DELETE, OPTIONS"
+    )
     response.headers["Access-Control-Allow-Headers"] = (
         "Content-Type, Authorization"
     )
@@ -214,6 +216,80 @@ def logout():
     """Logs out the user."""
     logout_user()
     return jsonify({"message": "Logged out successfully"})
+
+
+# REIVEWS
+@app.route("/api/my-reviews", methods=["GET"])
+def get_user_reviews():
+    """Fetch all reviews for a given username."""
+    username = request.args.get("username")
+
+    if not username:
+        return jsonify({"error": "Username is required"}), 400
+
+    user = User.query.filter_by(username=username).first()
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+
+    user_reviews = Review.query.filter_by(user_id=user.id).all()
+
+    reviews_with_titles = []
+    for review in user_reviews:
+        response = requests.get(
+            f"{BASE_URL}{review.movie_id}?api_key={API_KEY}"
+        )
+        movie = response.json()
+        reviews_with_titles.append(
+            {
+                "id": review.id,
+                "movie_id": review.movie_id,
+                "movie_title": movie.get("title", "Unknown"),
+                "rating": review.rating,
+                "comment": review.comment,
+            }
+        )
+
+    return jsonify(reviews_with_titles)
+
+
+@app.route("/api/delete-review/<int:review_id>", methods=["DELETE"])
+def delete_review(review_id):
+    """Delete a review."""
+    if request.method == "OPTIONS":
+        return (
+            jsonify({"message": "Preflight OK"}),
+            200,
+        )  # ✅ Handle OPTIONS preflight
+    try:
+        review = Review.query.filter_by(id=review_id).first()
+        if not review:
+            return jsonify({"error": "Review not found or unauthorized"}), 404
+
+        db.session.delete(review)
+        db.session.commit()
+        return jsonify({"message": "Review deleted"})
+    except Exception as e:
+        print(e)
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/update-reviews", methods=["POST"])
+def update_reviews():
+    """Update multiple reviews' ratings."""
+    data = request.get_json()
+    print(data)
+    updates = data.get("updates", [])
+
+    for update in updates:
+        review = Review.query.filter_by(id=update["id"]).first()
+        if review:
+            if "rating" in update:
+                review.rating = update["rating"]
+            if "comment" in update:
+                review.comment = update["comment"]
+
+    db.session.commit()
+    return jsonify({"message": "Reviews updated successfully"})
 
 
 if __name__ == "__main__":

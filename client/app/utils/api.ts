@@ -1,6 +1,5 @@
-const API_URL = "http://127.0.0.1:7890/api"; // Adjust this if deployed
+const API_URL = "http://127.0.0.1:7890/api";
 
-// ✅ Check if user is authenticated
 export async function checkAuth(): Promise<boolean> {
   try {
     const response = await fetch(`${API_URL}/auth-status`, { credentials: "include" });
@@ -54,7 +53,6 @@ export async function submitReview(movieId: number, rating: number | null, comme
   }
 }
 
-// ✅ Login a user
 export async function loginUser(username: string) {
   try {
     const response = await fetch(`${API_URL}/login`, {
@@ -71,7 +69,6 @@ export async function loginUser(username: string) {
   }
 }
 
-// ✅ Register a new user
 export async function registerUser(username: string) {
   try {
     const response = await fetch(`${API_URL}/register`, {
@@ -86,7 +83,6 @@ export async function registerUser(username: string) {
   }
 }
 
-// ✅ Logout user
 export async function logoutUser() {
   try {
     const response = await fetch(`${API_URL}/logout`, {
@@ -101,19 +97,57 @@ export async function logoutUser() {
   }
 }
 
-// ✅ Submit a review
-// export async function submitReview(movieId: number, rating: number, comment: string) {
-//   try {
-//     const response = await fetch(`${API_URL}/review`, {
-//       method: "POST",
-//       headers: { "Content-Type": "application/json" },
-//       body: JSON.stringify({ movie_id: movieId, rating, comment }),
-//       credentials: "include",
-//     });
+export async function fetchUserReviews(username: string) {
+  try {
+    const response = await fetch(`${API_URL}/my-reviews?username=${encodeURIComponent(username)}`, {
+      method: "GET",
+      credentials: "include",
+    });
 
-//     return await response.json();
-//   } catch (error) {
-//     console.error("Review submission error:", error);
-//     return { error: "Review submission failed. Please try again." };
-//   }
-// }
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error("Error fetching user reviews:", error);
+    return [];
+  }
+}
+
+export async function deleteReview(reviewId: number) {
+  try {
+    const response = await fetch(`${API_URL}/delete-review/${reviewId}`, {
+      method: "DELETE",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      mode: "cors",
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+
+  } catch (error) {
+    console.error("Error deleting review:", error);
+  }
+}
+
+
+export async function updateReview(updates: { id: number; rating: number; comment: string }[]) {
+  try {
+    // console.log("Updating reviews:", updates);
+    const response = await fetch(`${API_URL}/update-reviews`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ updates }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+  } catch (error) {
+    console.error("Error updating reviews:", error);
+  }
+}

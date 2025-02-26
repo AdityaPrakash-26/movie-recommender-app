@@ -54,8 +54,14 @@ export default function Index() {
   return (
     <div className="flex flex-col items-center py-8">
       <button
+        onClick={() => navigate("/my-reviews")}
+        className="absolute top-4 right-4 bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition mb-2"
+      >
+        My Reviews
+      </button>
+      <button
         onClick={handleLogout}
-        className="absolute top-4 right-4 bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition"
+        className="absolute top-16 right-4 bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition"
       >
         Logout
       </button>
