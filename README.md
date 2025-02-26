@@ -4,13 +4,14 @@ Simple Flask web app that fetches random movie details from **The Movie Database
 
 This is assignment 3 in CS540: Software Engineering at Emory University taught by Professor John Martin.
 
-You can view the deployed website [here](https://milestone2-aprak39-909886654275.us-east1.run.app/).
+~~You can view the deployed website [here](https://milestone2-aprak39-909886654275.us-east1.run.app/).~~
+Due to changes in HW requirements, this project is not deployed.
 
 ## Installation
 
 1. Clone this repository:
    ```bash
-   git clone https://github.com/cs540-s25/milestone2-aprak39
+   git clone https://github.com/cs540-s25/milestone3-aprak39
    cd milestone2-aprak39
    ```
 2. Create a virtual environment (optional but recommended):

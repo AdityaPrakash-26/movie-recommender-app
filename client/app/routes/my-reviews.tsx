@@ -3,7 +3,14 @@ import { fetchUserReviews, deleteReview, updateReview } from "~/utils/api";
 import { useNavigate } from "@remix-run/react";
 
 export default function MyReviews() {
-    const [reviews, setReviews] = useState<any[]>([]);
+    interface Review {
+        id: number;
+        movie_title: string;
+        rating: number;
+        comment: string;
+    }
+
+    const [reviews, setReviews] = useState<Review[]>([]);
     const [editedReviews, setEditedReviews] = useState<{ [id: number]: { rating: number, comment: string } }>({});
     const [loading, setLoading] = useState<boolean>(true);
     const navigate = useNavigate();
@@ -68,7 +75,7 @@ export default function MyReviews() {
             {loading ? (
                 <p className="text-gray-400">Loading...</p>
             ) : reviews.length === 0 ? (
-                <p className="text-gray-400">You haven't reviewed any movies yet.</p>
+                <p className="text-gray-400">You have not reviewed any movies yet.</p>
             ) : (
                 <div className="mt-6 bg-gray-800 p-6 rounded-lg shadow-lg max-w-lg w-full">
                     {reviews.map((review) => (
@@ -77,7 +84,16 @@ export default function MyReviews() {
                             
                             {/* Editable Rating */}
                             <div className="flex items-center mt-2">
-                                <label className="mr-2">Rating:</label>
+                                <label className="mr-2" htmlFor={`rating-${review.id}`}>Rating:</label>
+                                <input
+                                    id={`rating-${review.id}`}
+                                    type="number"
+                                    value={editedReviews[review.id]?.rating ?? review.rating}
+                                    min="1"
+                                    max="10"
+                                    className="p-1 text-white rounded w-16 mr-2"
+                                    onChange={(e) => handleEdit(review.id, "rating", Number(e.target.value))}
+                                />
                                 <input
                                     type="number"
                                     value={editedReviews[review.id]?.rating ?? review.rating}

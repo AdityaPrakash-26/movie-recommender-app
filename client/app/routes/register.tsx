@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { Form, useActionData, redirect } from "@remix-run/react";
-import { useNavigate } from "@remix-run/react";
+import { Form, useActionData , useNavigate } from "@remix-run/react";
+
 
 import { registerUser } from "~/utils/api";
 

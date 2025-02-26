@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import { Form, useActionData, redirect } from "@remix-run/react";
+import { Form, useActionData , useNavigate } from "@remix-run/react";
 
 import { loginUser } from "~/utils/api";
-import { useNavigate } from "@remix-run/react";
+
 
 export const action = async ({ request }: { request: Request }) => {
   const formData = await request.formData();
@@ -52,7 +52,7 @@ export default function LoginPage() {
         </Form>
         {error && <p className="text-red-500">{error}</p>}
         <p className="text-sm mt-3">
-          Don't have an account?{" "}
+          Don&apos;t have an account?{" "}
           <a href="/register" className="text-blue-400 hover:underline">
             Register here
           </a>

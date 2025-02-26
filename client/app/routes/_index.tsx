@@ -3,8 +3,17 @@ import { fetchMovie, submitReview, logoutUser } from "~/utils/api";
 import { useNavigate } from "@remix-run/react";
 
 export default function Index() {
-  const [movie, setMovie] = useState<any>(null);
-  const [reviews, setReviews] = useState<any[]>([]);
+  interface Movie {
+    id: number;
+    title: string;
+    tagline: string;
+    poster_path: string;
+    wiki_link: string;
+    reviews: { username: string; rating: number; comment: string }[];
+  }
+
+  const [movie, setMovie] = useState<Movie | null>(null);
+  const [reviews, setReviews] = useState<{ username: string; rating: number; comment: string }[]>([]);
   const [username, setUsername] = useState<string | null>(null);
   const [comment, setComment] = useState<string>("");
   const [rating, setRating] = useState<number | null>(null);
@@ -74,7 +83,7 @@ export default function Index() {
         <a
           href={movie.wiki_link}
           target="_blank"
-          className="mt-4 inline-block bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition"
+          className="mt-4 inline-block bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition" rel="noreferrer"
         >
           More Info on Wikipedia
         </a>
@@ -88,7 +97,7 @@ export default function Index() {
                 <li key={index} className="bg-gray-700 p-3 rounded-lg mb-2">
                   <p className="font-bold">{review.username}:</p>
                   {review.rating && <p>⭐ {review.rating}/10</p>}
-                  {review.comment && <p>"{review.comment}"</p>}
+                  {review.comment && <p>&quot;{review.comment}&quot;</p>}
                 </li>
               ))}
             </ul>
