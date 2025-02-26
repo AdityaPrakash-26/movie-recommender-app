@@ -21,6 +21,7 @@ Due to changes in HW requirements, this project is not deployed.
 3. Download and configure [PostgreSQL](https://www.postgresql.org/), and add its URL to .env as `DATABASE_URL`. Example: `DATABASE_URL=postgresql://<username>:<password>@localhost:5432/<db_name>`
 
 4. Start the Flask server:
+
     4.1 First navigate to the server directory
         ```bash
         cd server
@@ -32,15 +33,20 @@ Due to changes in HW requirements, this project is not deployed.
         source venv/bin/activate  # macOS/Linux
         venv\Scripts\activate  # Windows
         ```
+
     4.3 Install dependencies
         ```bash
         pip install -r requirements.txt
         ```
+
     4.4 Start the server
         ```bash
         python main.py
         ```
+
+
 5. Start the Remix server:
+
     5.1 First navigate to the client directory (assuming you are still in server)
         ```bash
         cd ../client
