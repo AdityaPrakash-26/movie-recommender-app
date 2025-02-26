@@ -12,7 +12,7 @@ Due to changes in HW requirements, this project is not deployed.
 1. Clone this repository:
    ```bash
    git clone https://github.com/cs540-s25/milestone3-aprak39
-   cd milestone2-aprak39
+   cd milestone3-aprak39
    ```
 
 2. Create a .env file in the project root and add your [TMDb API key](https://developer.themoviedb.org/docs/getting-started):
