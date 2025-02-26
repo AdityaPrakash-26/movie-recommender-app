@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { fetchMovie, submitReview } from "~/utils/api";
+import { fetchMovie, submitReview, logoutUser } from "~/utils/api";
 import { useNavigate } from "@remix-run/react";
 
 export default function Index() {
@@ -43,10 +43,22 @@ export default function Index() {
     }
   };
 
+    const handleLogout = async () => {
+    await logoutUser(); // Call API to log out
+    localStorage.removeItem("username"); // Remove from local storage
+    navigate("/login");
+  };
+
   if (!movie) return <p className="text-center text-white">Loading movie...</p>;
 
   return (
     <div className="flex flex-col items-center py-8">
+      <button
+        onClick={handleLogout}
+        className="absolute top-4 right-4 bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition"
+      >
+        Logout
+      </button>
       <div className="bg-gray-800 p-6 rounded-lg shadow-lg max-w-lg text-center">
         <h1 className="text-3xl font-bold text-yellow-400">{movie.title}</h1>
         <p className="italic text-gray-400">{movie.tagline}</p>
