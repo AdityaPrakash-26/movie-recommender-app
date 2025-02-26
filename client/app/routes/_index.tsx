@@ -2,21 +2,35 @@ import { useEffect, useState } from "react";
 import { fetchMovie, checkAuth } from "~/utils/api";
 import { redirect } from "@remix-run/node";
 import { useLoaderData } from "@remix-run/react";
+import { useNavigate } from "@remix-run/react";
 
-export const loader = async () => {
-  const isAuthenticated = await checkAuth();
-  if (!isAuthenticated) {
-    console.log("User is not authenticated. Redirecting to login page.");
-    throw redirect("/login");
-  }
-  return null;
-};
+// export const loader = async () => {
+//   const isAuthenticated = await checkAuth();
+//   if (!isAuthenticated) {
+//     console.log("User is not authenticated. Redirecting to login page.");
+//     throw redirect("/login");
+//   }
+//   return null;
+// };
 
 export default function Index() {
   const [movie, setMovie] = useState<any>(null);
+  const [username, setUsername] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchMovie().then(setMovie).catch(console.error);
+  }, []);
+
+  useEffect(() => {
+    console.log("Checking for authentication");
+    const user = localStorage.getItem("username")
+    if (!user) {
+      console.log("User is not authenticated. Redirecting to login page.");
+      navigate("/login");
+    }
+
+    setUsername(user);
   }, []);
 
   if (!movie) return <p className="text-center text-white">Loading movie...</p>;

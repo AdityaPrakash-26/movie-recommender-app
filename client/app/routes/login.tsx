@@ -1,6 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Form, useActionData, redirect } from "@remix-run/react";
+
 import { loginUser } from "~/utils/api";
+import { useNavigate } from "@remix-run/react";
 
 export const action = async ({ request }: { request: Request }) => {
   const formData = await request.formData();
@@ -10,14 +12,23 @@ export const action = async ({ request }: { request: Request }) => {
   if (response.error) {
     return { error: response.error };
   }
-  console.log(response);
-  console.log("User logged in successfully.");
-  return redirect("/");
+  return username;
 };
 
 export default function LoginPage() {
   const actionData = useActionData<{ error?: string }>(); // Get error message from action
+  const navigate = useNavigate();
   const [error, setError] = useState<string | null>(actionData?.error || null);
+
+  useEffect(() => {
+    console.log("actionData", actionData);
+    if (actionData && !actionData.error) {
+      localStorage.setItem("username", actionData as unknown as string);
+      console.log("Debugging!")
+      console.log(localStorage.getItem("username"));
+      navigate("/");
+    }
+  }, [actionData]);
 
   return (
     <div className="flex justify-center items-center h-screen">

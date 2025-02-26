@@ -94,7 +94,6 @@ def auth_status():
 
 
 @app.route("/api/movie", methods=["GET"])
-@login_required
 def get_random_movie():
     """Returns a random movie as JSON."""
     movie_ids = [550, 13, 680, 157336]  # Example movie IDs
@@ -127,7 +126,6 @@ def get_random_movie():
 
 
 @app.route("/api/review", methods=["POST"])
-@login_required
 def submit_review():
     """Handles review submission."""
     data = request.get_json()
@@ -167,7 +165,7 @@ def login():
     if not user:
         return jsonify({"error": "Invalid username"}), 401
 
-    login_user(user)
+    login_user(user, force=True)
     return jsonify({"message": "Login successful", "user": user.username})
 
 
@@ -189,7 +187,6 @@ def register():
 
 
 @app.route("/api/logout", methods=["POST"])
-@login_required
 def logout():
     """Logs out the user."""
     logout_user()
@@ -198,4 +195,4 @@ def logout():
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 7890))
-    app.run(debug=True, host="0.0.0.0", port=port)
+    app.run(debug=False, host="0.0.0.0", port=port)

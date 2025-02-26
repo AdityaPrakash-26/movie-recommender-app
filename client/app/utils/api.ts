@@ -5,6 +5,13 @@ export async function checkAuth(): Promise<boolean> {
   try {
     const response = await fetch(`${API_URL}/auth-status`, { credentials: "include" });
     const data = await response.json();
+
+    // check if localStorage has username
+    console.log("Checking for authentication");
+    if (localStorage.getItem("username")) {
+      console.log("User is authenticated");
+      return true;
+    }
     return data.isAuthenticated; // Returns true if user is logged in
   } catch (error) {
     console.error("Error checking authentication:", error);
