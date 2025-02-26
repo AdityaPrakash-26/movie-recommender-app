@@ -34,3 +34,4 @@ Due to changes in HW requirements, this project is not deployed.
 - Wikipedia API for movie-related links.
 - Google Cloud Platform for providing free hosting
 - Black Python Formatter - I am using Black v24.8.0
+- ESLint - AirBnB Configuration
