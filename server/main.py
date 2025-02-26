@@ -25,7 +25,7 @@ load_dotenv()
 
 # Flask app setup
 app = Flask(__name__)
-CORS(app, supports_credentials=True)
+CORS(app, supports_credentials=True, origins=["http://localhost:5173"])
 
 app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL")
 app.config["SECRET_KEY"] = os.getenv("SECRET_KEY")
@@ -86,6 +86,18 @@ def get_wikipedia_link(title):
     return "#"
 
 
+@app.after_request
+def add_cors_headers(response):
+    """Ensure CORS headers are applied to every response."""
+    response.headers["Access-Control-Allow-Origin"] = "http://localhost:5173"
+    response.headers["Access-Control-Allow-Credentials"] = "true"
+    response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
+    response.headers["Access-Control-Allow-Headers"] = (
+        "Content-Type, Authorization"
+    )
+    return response
+
+
 @app.route("/api/auth-status", methods=["GET"])
 def auth_status():
     """Check if the user is logged in."""
@@ -128,31 +140,42 @@ def get_random_movie():
 @app.route("/api/review", methods=["POST"])
 def submit_review():
     """Handles review submission."""
-    data = request.get_json()
-    movie_id = data.get("movie_id")
-    rating = data.get("rating")
-    comment = data.get("comment")
+    try:
+        data = request.get_json()
+        movie_id = data.get("movie_id")
+        rating = data.get("rating")
+        comment = data.get("comment")
+        username = data.get("username")
+        print(data)
 
-    if not movie_id:
-        return jsonify({"error": "Movie ID is required"}), 400
+        if not movie_id:
+            return jsonify({"error": "Movie ID is required"}), 400
+        print("Querying user")
+        user = User.query.filter_by(username=username).first()
+        print(user.id)
+        if not user:
+            return jsonify({"error": "Invalid username"}), 401
 
-    review = Review(
-        movie_id=movie_id,
-        user_id=current_user.id,
-        rating=rating,
-        comment=comment,
-    )
-    db.session.add(review)
-    db.session.commit()
+        review = Review(
+            movie_id=movie_id,
+            user_id=user.id,
+            rating=rating,
+            comment=comment,
+        )
+        db.session.add(review)
+        db.session.commit()
 
-    return jsonify(
-        {
-            "message": "Review added!",
-            "username": current_user.username,
-            "rating": rating,
-            "comment": comment,
-        }
-    )
+        return jsonify(
+            {
+                "message": "Review added!",
+                # "username": current_user.username,
+                "rating": rating,
+                "comment": comment,
+            }
+        )
+    except Exception as e:
+        print(e)
+        return jsonify({"error": str(e)}), 500
 
 
 @app.route("/api/login", methods=["POST"])

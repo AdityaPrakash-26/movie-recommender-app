@@ -39,7 +39,7 @@ export default function LoginPage() {
           <input
             name="username"
             placeholder="Enter username"
-            className="p-2 rounded mb-3 text-black"
+            className="p-2 rounded mb-3 text-white"
             required
             onChange={() => setError(null)}
           />

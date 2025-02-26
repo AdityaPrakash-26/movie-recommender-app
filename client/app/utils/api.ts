@@ -19,14 +19,37 @@ export async function checkAuth(): Promise<boolean> {
   }
 }
 
-// ✅ Fetch a random movie from the backend
 export async function fetchMovie() {
   try {
-    const response = await fetch(`${API_URL}/movie`, { credentials: "include" });
-    if (!response.ok) throw new Error("Failed to fetch movie.");
-    return response.json();
+    const response = await fetch(`${API_URL}/movie`, {
+      method: "GET",
+      credentials: "include",
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+
+    return await response.json();
   } catch (error) {
     console.error("Error fetching movie:", error);
+    return null;
+  }
+}
+
+export async function submitReview(movieId: number, rating: number | null, comment: string, username: string) {
+  try {
+    const response = await fetch(`${API_URL}/review`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ movie_id: movieId, rating, comment, username }),
+      credentials: "include",
+      mode: "cors",
+    });
+
+    return await response.json();
+  } catch (error) {
+    console.error("Error submitting review:", error);
     return null;
   }
 }
@@ -79,18 +102,18 @@ export async function logoutUser() {
 }
 
 // ✅ Submit a review
-export async function submitReview(movieId: number, rating: number, comment: string) {
-  try {
-    const response = await fetch(`${API_URL}/review`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ movie_id: movieId, rating, comment }),
-      credentials: "include",
-    });
+// export async function submitReview(movieId: number, rating: number, comment: string) {
+//   try {
+//     const response = await fetch(`${API_URL}/review`, {
+//       method: "POST",
+//       headers: { "Content-Type": "application/json" },
+//       body: JSON.stringify({ movie_id: movieId, rating, comment }),
+//       credentials: "include",
+//     });
 
-    return await response.json();
-  } catch (error) {
-    console.error("Review submission error:", error);
-    return { error: "Review submission failed. Please try again." };
-  }
-}
+//     return await response.json();
+//   } catch (error) {
+//     console.error("Review submission error:", error);
+//     return { error: "Review submission failed. Please try again." };
+//   }
+// }
