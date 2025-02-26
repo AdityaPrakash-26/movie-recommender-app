@@ -56,7 +56,6 @@ export async function registerUser(username: string) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username }),
     });
-
     return await response.json();
   } catch (error) {
     console.error("Registration error:", error);
