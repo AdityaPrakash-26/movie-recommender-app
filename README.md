@@ -62,6 +62,8 @@ Due to changes in HW requirements, this project is not deployed.
         npm run dev
         ```
 
+6. Open `http://localhost:5173/` in your browser to view the app.
+
 ## Acknowledgements
 - tMDB - The Movie Database for providing the API to look up movies
 - Wikipedia API for movie-related links.
