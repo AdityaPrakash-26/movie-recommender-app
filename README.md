@@ -1,12 +1,8 @@
 # Movie Explorer
 
-Simple Flask web app that fetches random movie details from **The Movie Database (TMDb)** and provides a Wikipedia page for more information.
+Movie Explorer is a full‐stack web application built with Flask (Python) on the backend and Remix (React‐based) on the frontend, using PostgreSQL. It fetches random movie details from The Movie Database (TMDb) and links to Wikipedia for expanded film information.
 
-This is assignment 3 in CS540: Software Engineering at Emory University taught by Professor John Martin.
-
-~~You can view the deployed website [here](https://milestone2-aprak39-909886654275.us-east1.run.app/). Due to changes in HW requirements, this project is not deployed.~~
-
-WIP notice: I am reworking this app to have enhanced functionality as a personal project (not as part of the assignment/grading). Stay tuned! It will be deployed on GCloud soon!
+Originally developed as part of CS540: Software Engineering at Emory University under Professor John Martin, this project has evolved with enhanced features as my personal project. It incorporates user authentication, movie reviews, and is slated for deployment on Google Cloud. By combining a modern JavaScript frontend with a robust Python backend, Movie Explorer demonstrates best practices in web development, API integration, and database management.
 
 ## Installation
 
