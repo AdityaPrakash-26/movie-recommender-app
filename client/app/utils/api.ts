@@ -1,4 +1,4 @@
-const API_URL = "http://127.0.0.1:7890/api";
+const API_URL = "https://moive-explorer-backend.onrender.com/api";
 
 export async function checkAuth(): Promise<boolean> {
   try {
