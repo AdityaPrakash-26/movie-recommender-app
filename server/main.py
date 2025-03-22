@@ -2,8 +2,6 @@ from flask import (
     Flask,
     request,
     jsonify,
-    redirect,
-    url_for,
 )
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import (
@@ -12,13 +10,13 @@ from flask_login import (
     login_user,
     logout_user,
     current_user,
-    login_required,
 )
+from dotenv import load_dotenv
+from flask_cors import CORS
+from flask_caching import Cache
 import requests
 import os
-from dotenv import load_dotenv
 import random
-from flask_cors import CORS
 
 # Load environment variables
 load_dotenv()
@@ -29,7 +27,10 @@ CORS(app, supports_credentials=True, origins=["http://localhost:5173"])
 
 app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL")
 app.config["SECRET_KEY"] = os.getenv("SECRET_KEY")
+app.config["CACHE_TYPE"] = "redis"
+app.config["CACHE_REDIS_URL"] = "redis://localhost:6379/0"
 
+cache = Cache(app)
 db = SQLAlchemy(app)
 
 # Flask-Login setup
@@ -107,10 +108,10 @@ def auth_status():
     return jsonify({"isAuthenticated": current_user.is_authenticated})
 
 
+@cache.cached(timeout=300, key_prefix="random_movie")
 @app.route("/api/movie", methods=["GET"])
 def get_random_movie():
-    """Returns a random movie as JSON."""
-    movie_ids = [550, 13, 680, 157336]  # Example movie IDs
+    movie_ids = [550, 13, 680, 157336]
     random_movie_id = random.choice(movie_ids)
 
     response = requests.get(f"{BASE_URL}{random_movie_id}?api_key={API_KEY}")
@@ -166,7 +167,7 @@ def submit_review():
         )
         db.session.add(review)
         db.session.commit()
-
+        cache.delete("random_movie")
         return jsonify(
             {
                 "message": "Review added!",
@@ -178,6 +179,19 @@ def submit_review():
     except Exception as e:
         print(e)
         return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/search", methods=["GET"])
+def search_movies():
+    query = request.args.get("query")
+    if not query:
+        return jsonify({"error": "Query parameter is required."}), 400
+
+    search_url = f"https://api.themoviedb.org/3/search/movie?api_key={API_KEY}&query={query}"
+    response = requests.get(search_url)
+    data = response.json()
+    results = data.get("results", [])
+    return jsonify(results)
 
 
 @app.route("/api/login", methods=["POST"])
