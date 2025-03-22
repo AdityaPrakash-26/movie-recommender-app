@@ -96,7 +96,9 @@ def get_wikipedia_link(title):
 @app.after_request
 def add_cors_headers(response):
     """Ensure CORS headers are applied to every response."""
-    response.headers["Access-Control-Allow-Origin"] = "http://localhost:5173"
+    response.headers["Access-Control-Allow-Origin"] = (
+        "https://movie-recommender-app-gyxv.onrender.com"
+    )
     response.headers["Access-Control-Allow-Credentials"] = "true"
     response.headers["Access-Control-Allow-Methods"] = (
         "GET, POST, PUT, DELETE, OPTIONS"
