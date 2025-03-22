@@ -3,9 +3,9 @@ FROM node:18-alpine as builder
 
 WORKDIR /app
 
-# Copy package.json and package-lock.json and install dependencies
+# Copy package.json and package-lock.json (if available) and install dependencies with legacy-peer-deps flag
 COPY package*.json ./
-RUN npm install
+RUN npm install --legacy-peer-deps
 
 # Copy the rest of the code and build the app
 COPY . .
