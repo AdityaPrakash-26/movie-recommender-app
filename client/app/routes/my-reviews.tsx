@@ -81,7 +81,7 @@ export default function MyReviews() {
                     {reviews.map((review) => (
                         <div key={review.id} className="bg-gray-700 p-3 rounded-lg mb-2">
                             <p className="font-bold">{review.movie_title}</p>
-                            
+
                             {/* Editable Rating */}
                             <div className="flex items-center mt-2">
                                 <label className="mr-2" htmlFor={`rating-${review.id}`}>Rating:</label>
@@ -94,14 +94,14 @@ export default function MyReviews() {
                                     className="p-1 text-white rounded w-16 mr-2"
                                     onChange={(e) => handleEdit(review.id, "rating", Number(e.target.value))}
                                 />
-                                <input
+                                {/* <input
                                     type="number"
                                     value={editedReviews[review.id]?.rating ?? review.rating}
                                     min="1"
                                     max="10"
                                     className="p-1 text-white rounded w-16 mr-2"
                                     onChange={(e) => handleEdit(review.id, "rating", Number(e.target.value))}
-                                />
+                                /> */}
                             </div>
                             <textarea
                                 className="w-full mt-2 p-2 text-white rounded"

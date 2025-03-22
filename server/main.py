@@ -111,7 +111,7 @@ def auth_status():
 @cache.cached(timeout=300, key_prefix="random_movie")
 @app.route("/api/movie", methods=["GET"])
 def get_random_movie():
-    movie_ids = [550, 13, 680, 157336]
+    movie_ids = [550, 13, 680, 157336, 120, 424, 155, 122, 27205, 423, 999]
     random_movie_id = random.choice(movie_ids)
 
     response = requests.get(f"{BASE_URL}{random_movie_id}?api_key={API_KEY}")

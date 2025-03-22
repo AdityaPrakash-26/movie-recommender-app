@@ -57,6 +57,9 @@ export default function Index() {
   return (
     <Layout>
       <div className="flex flex-col items-center py-8">
+        {/* checkout random movie title */}
+        <h1 className="text-4xl font-bold mb-4">Confused? How about you watch this?</h1>
+
         <div className="bg-gray-800 p-6 rounded-lg shadow-lg max-w-lg text-center">
           <h1 className="text-3xl font-bold text-yellow-400">{movie.title}</h1>
           <p className="italic text-gray-400">{movie.tagline}</p>
