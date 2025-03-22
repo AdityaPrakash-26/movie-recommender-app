@@ -194,6 +194,35 @@ def search_movies():
     return jsonify(results)
 
 
+@app.route("/api/movie/<int:movie_id>", methods=["GET"])
+def get_movie(movie_id):
+    response = requests.get(f"{BASE_URL}{movie_id}?api_key={API_KEY}")
+    movie = response.json()
+    print(movie)
+
+    wiki_link = get_wikipedia_link(movie["title"])
+    reviews = Review.query.filter_by(movie_id=movie_id).all()
+
+    return jsonify(
+        {
+            "id": movie["id"],
+            "title": movie["title"],
+            "tagline": movie.get("tagline", ""),
+            "genres": [genre["name"] for genre in movie.get("genres", [])],
+            "poster_path": movie["poster_path"],
+            "wiki_link": wiki_link,
+            "reviews": [
+                {
+                    "username": rev.user.username,
+                    "rating": rev.rating,
+                    "comment": rev.comment,
+                }
+                for rev in reviews
+            ],
+        }
+    )
+
+
 @app.route("/api/login", methods=["POST"])
 def login():
     """User login authentication."""

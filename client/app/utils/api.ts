@@ -151,3 +151,39 @@ export async function updateReview(updates: { id: number; rating: number; commen
     console.error("Error updating reviews:", error);
   }
 }
+
+export async function searchMovies(query: string) {
+  try {
+    const response = await fetch(`${API_URL}/search?query=${encodeURIComponent(query)}`, {
+      method: "GET",
+      credentials: "include",
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error("Error searching movies:", error);
+    return [];
+  }
+}
+
+export async function fetchMovieDetails(movieId: number) {
+  try {
+    const response = await fetch(`${API_URL}/movie/${movieId}`, {
+      method: "GET",
+      credentials: "include",
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error("Error fetching movie details:", error);
+    return null;
+  }
+}
