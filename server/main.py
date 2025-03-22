@@ -23,7 +23,14 @@ load_dotenv()
 
 # Flask app setup
 app = Flask(__name__)
-CORS(app, supports_credentials=True)
+CORS(
+    app,
+    supports_credentials=True,
+    origins=[
+        "http://localhost:5173",
+        "https://movie-recommender-app-gyxv.onrender.com/",
+    ],
+)
 
 app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL")
 app.config["SECRET_KEY"] = os.getenv("SECRET_KEY")
