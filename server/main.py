@@ -28,7 +28,7 @@ CORS(
     supports_credentials=True,
     origins=[
         "http://localhost:5173",
-        "https://movie-recommender-app-gyxv.onrender.com/",
+        "https://movie-recommender-app-gyxv.onrender.com",
     ],
 )
 
