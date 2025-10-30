@@ -1,4 +1,5 @@
-const API_URL = "https://moive-explorer-backend.onrender.com/api";
+// Use a relative API base so the app works behind a reverse proxy (nginx)
+const API_URL = "/api";
 
 export async function checkAuth(): Promise<boolean> {
   try {

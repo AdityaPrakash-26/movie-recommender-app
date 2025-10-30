@@ -23,18 +23,32 @@ load_dotenv()
 
 # Flask app setup
 app = Flask(__name__)
+
+# CORS setup: allow local dev and configurable production origin
+FRONTEND_ORIGIN = os.getenv(
+    "FRONTEND_ORIGIN", "https://movie-app.aditya-prakash.me"
+)
+ALLOWED_ORIGINS = {
+    FRONTEND_ORIGIN,
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://localhost:3000",
+}
+
 CORS(
     app,
     supports_credentials=True,
-    origins=[
-        "https://movie-recommender-app-gyxv.onrender.com",
-    ],
+    origins=list(ALLOWED_ORIGINS),
 )
 
 app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL")
 app.config["SECRET_KEY"] = os.getenv("SECRET_KEY")
-app.config["CACHE_TYPE"] = "redis"
-app.config["CACHE_REDIS_URL"] = "redis://localhost:6379/0"
+cache_type = os.getenv("CACHE_TYPE", "SimpleCache")
+app.config["CACHE_TYPE"] = cache_type
+if cache_type.lower() == "redis":
+    app.config["CACHE_REDIS_URL"] = os.getenv(
+        "CACHE_REDIS_URL", "redis://redis:6379/0"
+    )
 
 cache = Cache(app)
 db = SQLAlchemy(app)
@@ -96,9 +110,9 @@ def get_wikipedia_link(title):
 @app.after_request
 def add_cors_headers(response):
     """Ensure CORS headers are applied to every response."""
-    response.headers["Access-Control-Allow-Origin"] = (
-        "https://movie-recommender-app-gyxv.onrender.com"
-    )
+    origin = request.headers.get("Origin")
+    if origin in ALLOWED_ORIGINS:
+        response.headers["Access-Control-Allow-Origin"] = origin
     response.headers["Access-Control-Allow-Credentials"] = "true"
     response.headers["Access-Control-Allow-Methods"] = (
         "GET, POST, PUT, DELETE, OPTIONS"
