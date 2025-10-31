@@ -1,21 +1,14 @@
 // Use a relative API base so the app works behind a reverse proxy (nginx)
 const API_URL = "/api";
 
-export async function checkAuth(): Promise<boolean> {
+export async function checkAuth(): Promise<{ isAuthenticated: boolean; username?: string; email?: string; display_name?: string }>{
   try {
     const response = await fetch(`${API_URL}/auth-status`, { credentials: "include" });
     const data = await response.json();
-
-    // check if localStorage has username
-    console.log("Checking for authentication");
-    if (localStorage.getItem("username")) {
-      console.log("User is authenticated");
-      return true;
-    }
-    return data.isAuthenticated; // Returns true if user is logged in
+    return data;
   } catch (error) {
     console.error("Error checking authentication:", error);
-    return false;
+    return { isAuthenticated: false };
   }
 }
 
@@ -37,12 +30,12 @@ export async function fetchMovie() {
   }
 }
 
-export async function submitReview(movieId: number, rating: number | null, comment: string, username: string) {
+export async function submitReview(movieId: number, rating: number | null, comment: string) {
   try {
     const response = await fetch(`${API_URL}/review`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ movie_id: movieId, rating, comment, username }),
+      body: JSON.stringify({ movie_id: movieId, rating, comment }),
       credentials: "include",
       mode: "cors",
     });
@@ -54,53 +47,24 @@ export async function submitReview(movieId: number, rating: number | null, comme
   }
 }
 
-export async function loginUser(username: string) {
-  try {
-    const response = await fetch(`${API_URL}/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username }),
-      credentials: "include",
-    });
+// Login and register are handled via Cognito Hosted UI now
 
-    return await response.json();
-  } catch (error) {
-    console.error("Login error:", error);
-    return { error: "Login failed. Please try again." };
-  }
-}
-
-export async function registerUser(username: string) {
-  try {
-    const response = await fetch(`${API_URL}/register`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username }),
-    });
-    return await response.json();
-  } catch (error) {
-    console.error("Registration error:", error);
-    return { error: "Registration failed. Please try again." };
-  }
-}
+// Registration happens in Hosted UI
 
 export async function logoutUser() {
   try {
-    const response = await fetch(`${API_URL}/logout`, {
-      method: "POST",
-      credentials: "include",
-    });
-
-    return await response.json();
+    // Redirect to server GET endpoint that clears cookie and signs out of Cognito
+    window.location.href = `${API_URL}/auth/logout`;
+    return { ok: true } as any;
   } catch (error) {
     console.error("Logout error:", error);
     return { error: "Logout failed. Please try again." };
   }
 }
 
-export async function fetchUserReviews(username: string) {
+export async function fetchUserReviews() {
   try {
-    const response = await fetch(`${API_URL}/my-reviews?username=${encodeURIComponent(username)}`, {
+    const response = await fetch(`${API_URL}/my-reviews`, {
       method: "GET",
       credentials: "include",
     });

@@ -1,6 +1,18 @@
 import { useEffect, useState } from "react";
 import { fetchUserReviews, deleteReview, updateReview } from "~/utils/api";
 import { useNavigate } from "@remix-run/react";
+import type { LoaderFunctionArgs } from "@remix-run/node";
+import { redirect } from "@remix-run/node";
+
+export async function loader({ request }: LoaderFunctionArgs) {
+    const cookie = request.headers.get("cookie") || "";
+    try {
+        const res = await fetch("http://server:8080/api/auth-status", { headers: { cookie } });
+        const data = await res.json();
+        if (!data.isAuthenticated) return redirect("/");
+    } catch {}
+    return null;
+}
 
 export default function MyReviews() {
     interface Review {
@@ -16,12 +28,7 @@ export default function MyReviews() {
     const navigate = useNavigate();
 
     useEffect(() => {
-        const user = localStorage.getItem("username");
-        if (!user) {
-            navigate("/login");
-            return;
-        }
-        fetchUserReviews(user)
+        fetchUserReviews()
             .then(setReviews)
             .catch(console.error)
             .finally(() => setLoading(false));
@@ -55,8 +62,7 @@ export default function MyReviews() {
             setLoading(true);
             await updateReview(updates);
             setEditedReviews({});
-            const user = localStorage.getItem("username");
-            fetchUserReviews(user!).then(setReviews).finally(() => setLoading(false)); // Refresh list
+            fetchUserReviews().then(setReviews).finally(() => setLoading(false)); // Refresh list
         }
     };
 
@@ -64,7 +70,7 @@ export default function MyReviews() {
         <div className="flex flex-col items-center py-8">
             {/* Home Button */}
             <button
-                onClick={() => navigate("/")}
+                onClick={() => navigate("/movie")}
                 className="absolute top-4 right-4 bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition mb-2"
             >
                 Home

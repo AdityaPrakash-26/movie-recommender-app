@@ -7,3 +7,5 @@ psycopg2-binary
 flask-cors
 flask_caching
 redis
+python-jose[cryptography]
+PyJWT

@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "@remix-run/react";
+import type { LoaderFunctionArgs } from "@remix-run/node";
+import { redirect } from "@remix-run/node";
 import Layout from "~/components/Layout";
 import { fetchMovieDetails, submitReview } from "~/utils/api";
 
@@ -13,23 +15,25 @@ interface Movie {
     reviews: Array<{ username: string; rating: number; comment: string }>;
 }
 
+export async function loader({ request }: LoaderFunctionArgs) {
+    const cookie = request.headers.get("cookie") || "";
+    try {
+        const res = await fetch("http://server:8080/api/auth-status", { headers: { cookie } });
+        const data = await res.json();
+        if (!data.isAuthenticated) return redirect("/");
+    } catch {}
+    return null;
+}
+
 export default function MovieDetails() {
     const { movieId } = useParams();
     const [movie, setMovie] = useState<Movie | null>(null);
-    const [username, setUsername] = useState<string | null>(null);
     const [reviews, setReviews] = useState<{ username: string; rating: number; comment: string }[]>([]);
     const [comment, setComment] = useState<string>("");
     const [rating, setRating] = useState<number | null>(null);
     const navigate = useNavigate();
 
-    useEffect(() => {
-        const user = localStorage.getItem("username");
-        if (!user) {
-            console.log("User is not authenticated. Redirecting to login page.");
-            navigate("/login");
-        }
-        setUsername(user);
-    }, []);
+    // Authentication handled by loader
 
     useEffect(() => {
         fetchMovieDetails(Number(movieId))
@@ -53,9 +57,9 @@ export default function MovieDetails() {
         e.preventDefault();
         if (!movie) return;
 
-        const response = await submitReview(movie.id, rating, comment, username!);
+        const response = await submitReview(movie.id, rating, comment);
         if (response) {
-            setReviews([...reviews, { username, rating, comment }]);
+            setReviews([...reviews, { username: "You", rating: rating || 0, comment }]);
             setComment("");
             setRating(null);
         }
@@ -66,7 +70,7 @@ export default function MovieDetails() {
             <Layout>
                 <div className="max-w-4xl mx-auto p-6">
                     <button
-                        onClick={() => navigate("/")}
+                        onClick={() => navigate("/movie")}
                         className="bg-blue-500 text-white px-4 py-2 rounded mb-4"
                     >
                         Back
@@ -91,7 +95,7 @@ export default function MovieDetails() {
                                     <ul className="list-disc list-inside">
                                         {/* genre is an array */}
                                         {movie.genres.map((genre, idx) => (
-                                            <li key={idx}>{genre}</li>
+                                            <li key={idx}>{genre.name}</li>
                                         ))}
                                     </ul>
                                 </div>
