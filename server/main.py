@@ -242,20 +242,18 @@ def auth_status():
 
 @app.route("/api/auth/login", methods=["GET"])
 def auth_login():
-    """Start the OAuth2 Code + PKCE flow with Cognito Hosted UI."""
+    """Start the login flow with Cognito Hosted UI."""
     if not all([COGNITO_DOMAIN, COGNITO_CLIENT_ID, COGNITO_REDIRECT_URI]):
         return jsonify({"error": "Cognito not configured"}), 500
     state = uuid.uuid4().hex
     nonce = uuid.uuid4().hex
     code_verifier = base64.urlsafe_b64encode(os.urandom(40)).rstrip(b"=").decode("ascii")
     code_challenge = _get_code_challenge(code_verifier)
-    # Store transient values with short TTL
     _session_store_put(f"oidc:{state}", {
         "nonce": nonce,
         "code_verifier": code_verifier,
         "ts": int(time.time()),
     }, ttl=600)
-    # Request scopes must match what's allowed on the Cognito App Client
     scope = COGNITO_SCOPE
     auth_url = (
         f"https://{COGNITO_DOMAIN}/oauth2/authorize?"
@@ -263,10 +261,7 @@ def auth_login():
         f"&redirect_uri={requests.utils.quote(COGNITO_REDIRECT_URI, safe='')}&state={state}&nonce={nonce}"
         f"&code_challenge={code_challenge}&code_challenge_method=S256"
     )
-    # Best-effort attempt to hint signup screen
-    if request.args.get("signup"):
-        auth_url += "&screen_hint=signup"
-    # Standard behavior: redirect the user agent to Cognito Hosted UI
+
     return (
         "",
         302,
@@ -314,22 +309,20 @@ def auth_callback():
     except Exception as e:
         return jsonify({"error": "Invalid ID token", "details": str(e)}), 400
 
-    # Ensure user exists in local DB (idempotent upsert by username)
     username = (
         claims.get("cognito:username")
         or claims.get("preferred_username")
         or claims.get("email")
         or claims.get("sub")
     )
-    # Display name should be just the 'name' claim (no fallbacks)
     display_name = claims.get("name")
     user_rec = User.query.filter_by(username=username).first()
-    if not user_rec:
+
+    if not user_rec: # new user, create record
         user_rec = User(username=username)
         db.session.add(user_rec)
         db.session.commit()
 
-    # Establish server-side session
     sid = uuid.uuid4().hex
     sess = {
         "id_token": id_token,
@@ -343,7 +336,6 @@ def auth_callback():
         "user_id": user_rec.id,
     }
     ttl = min(expires_in, SESSION_TTL_SECS)
-    # Prefer token exp if sooner
     now = int(time.time())
     if claims.get("exp"):
         ttl = min(ttl, max(60, claims["exp"] - now))
@@ -404,6 +396,12 @@ def get_random_movie():
     wiki_link = get_wikipedia_link(movie["title"])
     reviews = Review.query.filter_by(movie_id=random_movie_id).all()
 
+    # Prefer showing the friendly display name for the current user (like Navbar)
+    sid = request.cookies.get(SESSION_COOKIE_NAME)
+    sess = _session_store_get(sid) if sid else None
+    current_user_id = sess.get("user_id") if sess else None
+    current_display_name = sess.get("display_name") if sess else None
+
     return jsonify(
         {
             "id": movie["id"],
@@ -419,6 +417,8 @@ def get_random_movie():
             "reviews": [
                 {
                     "username": rev.user.username,
+                    # Include a display_name; for the current user's own reviews, use Cognito's 'name'
+                    "display_name": (current_display_name if current_user_id and rev.user_id == current_user_id else None) or rev.user.username,
                     "rating": rev.rating,
                     "comment": rev.comment,
                 }
@@ -514,6 +514,12 @@ def get_movie(movie_id):
     wiki_link = get_wikipedia_link(movie.get("title", ""))
     reviews = Review.query.filter_by(movie_id=movie_id).all()
 
+    # Prefer showing the friendly display name for the current user (like Navbar)
+    sid = request.cookies.get(SESSION_COOKIE_NAME)
+    sess = _session_store_get(sid) if sid else None
+    current_user_id = sess.get("user_id") if sess else None
+    current_display_name = sess.get("display_name") if sess else None
+
     return jsonify(
         {
             "id": movie.get("id", movie_id),
@@ -529,6 +535,7 @@ def get_movie(movie_id):
             "reviews": [
                 {
                     "username": rev.user.username,
+                    "display_name": (current_display_name if current_user_id and rev.user_id == current_user_id else None) or rev.user.username,
                     "rating": rev.rating,
                     "comment": rev.comment,
                 }

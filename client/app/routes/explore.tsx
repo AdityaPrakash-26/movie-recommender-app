@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import type { LoaderFunctionArgs } from "@remix-run/node";
 import { redirect } from "@remix-run/node";
 import Layout from "~/components/Layout";
-import { fetchExplore, submitReview } from "~/utils/api";
+import { checkAuth, fetchExplore, submitReview } from "~/utils/api";
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const cookie = request.headers.get("cookie") || "";
@@ -21,16 +21,21 @@ interface Movie {
   poster_path: string;
   wiki_link: string;
   overview?: string;
-  reviews: { username: string; rating: number; comment: string }[];
+  reviews: { username: string; display_name?: string; rating: number; comment: string }[];
 }
 
 export default function ExplorePage() {
   const [movie, setMovie] = useState<Movie | null>(null);
-  const [reviews, setReviews] = useState<{ username: string; rating: number; comment: string }[]>([]);
+  const [reviews, setReviews] = useState<{ username: string; display_name?: string; rating: number; comment: string }[]>([]);
   const [comment, setComment] = useState<string>("");
   const [rating, setRating] = useState<number | null>(null);
+  const [myDisplayName, setMyDisplayName] = useState<string>("");
 
   useEffect(() => {
+    // Load current user's friendly display name (like Navbar)
+    checkAuth().then((a) => {
+      if (a?.isAuthenticated) setMyDisplayName(a.display_name || "");
+    });
     fetchExplore()
       .then((data) => {
         if (!data) return;
@@ -46,7 +51,15 @@ export default function ExplorePage() {
 
     const response = await submitReview(movie.id, rating, comment);
     if (response) {
-      setReviews([...reviews, { username: "You", rating: rating || 0, comment }]);
+      setReviews([
+        ...reviews,
+        {
+          username: myDisplayName || "You",
+          display_name: myDisplayName || "You",
+          rating: rating || 0,
+          comment,
+        },
+      ]);
       setComment("");
       setRating(null);
     }
@@ -64,23 +77,13 @@ export default function ExplorePage() {
           <p className="italic text-gray-400">{movie.tagline}</p>
           <img className="rounded-lg mt-4" src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`} alt={movie.title} />
 
-          {movie.wiki_link && (
-            <a
-              href={movie.wiki_link}
-              target="_blank"
-              className="mt-4 inline-block bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition" rel="noreferrer"
-            >
-              More Info on Wikipedia
-            </a>
-          )}
-
           <div className="mt-6">
             <h2 className="text-xl font-bold text-yellow-400">Reviews</h2>
             {reviews.length > 0 ? (
               <ul className="mt-2 text-left">
                 {reviews.map((review, index) => (
                   <li key={index} className="bg-gray-700 p-3 rounded-lg mb-2">
-                    <p className="font-bold">{review.username}:</p>
+                    <p className="font-bold">{review.display_name || review.username}:</p>
                     {review.rating && <p>⭐ {review.rating}/10</p>}
                     {review.comment && <p>&quot;{review.comment}&quot;</p>}
                   </li>

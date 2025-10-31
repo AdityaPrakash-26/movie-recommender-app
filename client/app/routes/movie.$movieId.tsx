@@ -1,9 +1,9 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate, useLoaderData } from "@remix-run/react";
 import type { LoaderFunctionArgs } from "@remix-run/node";
 import { redirect, json } from "@remix-run/node";
 import Layout from "~/components/Layout";
-import { submitReview } from "~/utils/api";
+import { checkAuth, submitReview } from "~/utils/api";
 
 interface Movie {
     id: number;
@@ -15,6 +15,8 @@ interface Movie {
 }
 
 export async function loader({ request, params }: LoaderFunctionArgs) {
+    const url = new URL(request.url);
+    const q = url.searchParams.get("q") || "";
     const cookie = request.headers.get("cookie") || "";
     try {
         const res = await fetch("http://server:8080/api/auth-status", { headers: { cookie } });
@@ -49,7 +51,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
     }
 
     // Fetch reviews from our server so we can keep using the existing review system
-    let reviews: Array<{ username: string; rating: number; comment: string }> = [];
+    let reviews: Array<{ username: string; display_name?: string; rating: number; comment: string }> = [];
     try {
         const r = await fetch(`http://server:8080/api/movie/${encodeURIComponent(movieId)}`, { headers: { cookie } });
         if (r.ok) {
@@ -74,24 +76,38 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
             : undefined,
     };
 
-    return json({ movie, reviews });
+    return json({ movie, reviews, q });
 }
 
 export default function MovieDetails() {
-    const { movie, reviews: initialReviews } = useLoaderData<typeof loader>();
-    const [reviews, setReviews] = useState<{ username: string; rating: number; comment: string }[]>(initialReviews || []);
+    const { movie, reviews: initialReviews, q } = useLoaderData<typeof loader>();
+    const [reviews, setReviews] = useState<{ username: string; display_name?: string; rating: number; comment: string }[]>(initialReviews || []);
     const [comment, setComment] = useState<string>("");
     const [rating, setRating] = useState<number | null>(null);
     const navigate = useNavigate();
+    const [myDisplayName, setMyDisplayName] = useState<string>("");
 
     // Authentication and data loading handled by loader
+    useEffect(() => {
+        checkAuth().then((a) => {
+            if (a?.isAuthenticated) setMyDisplayName(a.display_name || "");
+        });
+    }, []);
 
     const handleSubmitReview = async (e: React.FormEvent) => {
         e.preventDefault();
 
         const response = await submitReview(movie.id, rating, comment);
         if (response) {
-            setReviews([...reviews, { username: "You", rating: rating || 0, comment }]);
+            setReviews([
+                ...reviews,
+                {
+                    username: myDisplayName || "You",
+                    display_name: myDisplayName || "You",
+                    rating: rating || 0,
+                    comment,
+                },
+            ]);
             setComment("");
             setRating(null);
         }
@@ -102,7 +118,7 @@ export default function MovieDetails() {
             <Layout>
                 <div className="max-w-4xl mx-auto p-6">
                     <button
-                        onClick={() => navigate("/explore")}
+                        onClick={() => navigate(`/search${q ? `?q=${encodeURIComponent(q)}` : ""}`)}
                         className="bg-blue-500 text-white px-4 py-2 rounded mb-4"
                     >
                         Back
@@ -142,7 +158,7 @@ export default function MovieDetails() {
                                 <ul className="mt-2 text-left">
                                     {reviews.map((review, index) => (
                                         <li key={index} className="bg-gray-700 p-3 rounded-lg mb-2">
-                                            <p className="font-bold">{review.username}:</p>
+                                            <p className="font-bold">{review.display_name || review.username}:</p>
                                             {review.rating && <p>⭐ {review.rating}/10</p>}
                                             {review.comment && <p>&quot;{review.comment}&quot;</p>}
                                         </li>

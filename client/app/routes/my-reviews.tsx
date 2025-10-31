@@ -70,7 +70,7 @@ export default function MyReviews() {
         <div className="flex flex-col items-center py-8">
             {/* Home Button */}
             <button
-                onClick={() => navigate("/movie")}
+                onClick={() => navigate("/explore")}
                 className="absolute top-4 right-4 bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition mb-2"
             >
                 Home

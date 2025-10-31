@@ -39,13 +39,7 @@ export default function Landing() {
             className="bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600"
             href="/api/auth/login"
           >
-            Sign in
-          </a>
-          <a
-            className="bg-green-500 text-white px-6 py-3 rounded-lg hover:bg-green-600"
-            href="/api/auth/login?signup=1"
-          >
-            Sign up
+            Continue with AWS Cognito
           </a>
         </div>
       </div>

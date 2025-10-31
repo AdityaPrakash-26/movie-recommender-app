@@ -68,7 +68,7 @@ export default function SearchPage() {
               <h2 className="text-lg font-semibold mb-2">{m.title}</h2>
               <div className="mt-auto">
                 <Link
-                  to={`/movie/${m.id}`}
+                  to={`/movie/${m.id}?q=${encodeURIComponent(q)}`}
                   className="inline-block bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700"
                 >
                   View Details
