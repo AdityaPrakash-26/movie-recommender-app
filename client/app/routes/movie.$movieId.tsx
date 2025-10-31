@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from "react";
-import { useParams, useNavigate } from "@remix-run/react";
+import React, { useState } from "react";
+import { useNavigate, useLoaderData } from "@remix-run/react";
 import type { LoaderFunctionArgs } from "@remix-run/node";
-import { redirect } from "@remix-run/node";
+import { redirect, json } from "@remix-run/node";
 import Layout from "~/components/Layout";
-import { fetchMovieDetails, submitReview } from "~/utils/api";
+import { submitReview } from "~/utils/api";
 
 interface Movie {
     id: number;
@@ -11,51 +11,83 @@ interface Movie {
     tagline?: string;
     poster_path: string;
     overview?: string;
-    genres?: Array<{ name: string }>;
-    reviews: Array<{ username: string; rating: number; comment: string }>;
+    genres?: Array<{ id?: number; name: string }>;
 }
 
-export async function loader({ request }: LoaderFunctionArgs) {
+export async function loader({ request, params }: LoaderFunctionArgs) {
     const cookie = request.headers.get("cookie") || "";
     try {
         const res = await fetch("http://server:8080/api/auth-status", { headers: { cookie } });
         const data = await res.json();
         if (!data.isAuthenticated) return redirect("/");
     } catch {}
-    return null;
+    const movieId = params.movieId;
+    if (!movieId) return redirect("/explore");
+
+    // Prefer fetching details directly from TMDB API
+    // Use either a TMDB v4 bearer token (TMDB_BEARER) or an API key (TMDB_API_KEY/API_KEY)
+    const tmdbBearer = process.env.TMDB_BEARER;
+    const tmdbKey = process.env.TMDB_API_KEY || process.env.API_KEY;
+
+    let details: any = null;
+    try {
+        const baseUrl = `https://api.themoviedb.org/3/movie/${encodeURIComponent(movieId)}?language=en-US`;
+        const url = tmdbBearer || !tmdbKey ? baseUrl : `${baseUrl}&api_key=${encodeURIComponent(tmdbKey)}`;
+        const headers: Record<string, string> = {};
+        if (tmdbBearer) headers["Authorization"] = `Bearer ${tmdbBearer}`;
+        const resp = await fetch(url, { headers });
+        if (!resp.ok) throw new Error(`TMDB error ${resp.status}`);
+        details = await resp.json();
+    } catch (e) {
+        // If TMDB fetch fails (e.g., missing key), fall back to server endpoint to avoid a broken page
+        try {
+            const r = await fetch(`http://server:8080/api/movie/${encodeURIComponent(movieId)}`, { headers: { cookie } });
+            if (r.ok) {
+                details = await r.json();
+            }
+        } catch {}
+    }
+
+    // Fetch reviews from our server so we can keep using the existing review system
+    let reviews: Array<{ username: string; rating: number; comment: string }> = [];
+    try {
+        const r = await fetch(`http://server:8080/api/movie/${encodeURIComponent(movieId)}`, { headers: { cookie } });
+        if (r.ok) {
+            const data = await r.json();
+            reviews = Array.isArray(data?.reviews) ? data.reviews : [];
+        }
+    } catch {}
+
+    if (!details) {
+        throw new Response("Movie not found", { status: 404 });
+    }
+
+    // Normalize minimal shape the UI needs
+    const movie: Movie = {
+        id: Number(details.id),
+        title: details.title,
+        tagline: details.tagline || undefined,
+        poster_path: details.poster_path,
+        overview: details.overview || undefined,
+        genres: Array.isArray(details.genres)
+            ? details.genres.map((g: any) => (typeof g === "string" ? { name: g } : { id: g.id, name: g.name }))
+            : undefined,
+    };
+
+    return json({ movie, reviews });
 }
 
 export default function MovieDetails() {
-    const { movieId } = useParams();
-    const [movie, setMovie] = useState<Movie | null>(null);
-    const [reviews, setReviews] = useState<{ username: string; rating: number; comment: string }[]>([]);
+    const { movie, reviews: initialReviews } = useLoaderData<typeof loader>();
+    const [reviews, setReviews] = useState<{ username: string; rating: number; comment: string }[]>(initialReviews || []);
     const [comment, setComment] = useState<string>("");
     const [rating, setRating] = useState<number | null>(null);
     const navigate = useNavigate();
 
-    // Authentication handled by loader
-
-    useEffect(() => {
-        fetchMovieDetails(Number(movieId))
-            .then((data) => {
-                console.log(data);
-                setMovie(data);
-                setReviews(data.reviews);
-            })
-            .catch(console.error);
-    }, [movieId]);
-
-    if (!movie) {
-        return (
-            <div className="min-h-screen bg-gray-800 text-white flex items-center justify-center p-4">
-                Loading movie details...
-            </div>
-        );
-    }
+    // Authentication and data loading handled by loader
 
     const handleSubmitReview = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!movie) return;
 
         const response = await submitReview(movie.id, rating, comment);
         if (response) {
@@ -70,7 +102,7 @@ export default function MovieDetails() {
             <Layout>
                 <div className="max-w-4xl mx-auto p-6">
                     <button
-                        onClick={() => navigate("/movie")}
+                        onClick={() => navigate("/explore")}
                         className="bg-blue-500 text-white px-4 py-2 rounded mb-4"
                     >
                         Back
@@ -94,8 +126,8 @@ export default function MovieDetails() {
                                     <h2 className="text-xl font-semibold">Genres:</h2>
                                     <ul className="list-disc list-inside">
                                         {/* genre is an array */}
-                                        {movie.genres.map((genre, idx) => (
-                                            <li key={idx}>{genre.name}</li>
+                                        {movie.genres.map((genre: { id?: number; name: string }) => (
+                                            <li key={`${genre.id ?? genre.name}`}>{genre.name}</li>
                                         ))}
                                     </ul>
                                 </div>

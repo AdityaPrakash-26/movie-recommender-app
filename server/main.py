@@ -350,7 +350,7 @@ def auth_callback():
     _session_store_put(sid, sess, ttl)
 
     # Set secure HttpOnly cookie and redirect to app
-    redirect_to = os.getenv("FRONTEND_ORIGIN", "") + "/movie"
+    redirect_to = os.getenv("FRONTEND_ORIGIN", "") + "/explore"
     response = ("", 302, {"Location": redirect_to})
     from flask import make_response
     resp = make_response("", 302)
@@ -387,12 +387,19 @@ def auth_logout():
 
 @cache.cached(timeout=300, key_prefix="random_movie")
 @app.route("/api/movie", methods=["GET"])
+@app.route("/api/explore", methods=["GET"])  # New path for random explore
 def get_random_movie():
     movie_ids = [550, 13, 680, 157336, 120, 424, 155, 122, 27205, 423]
     random_movie_id = random.choice(movie_ids)
 
-    response = requests.get(f"{BASE_URL}{random_movie_id}?api_key={API_KEY}")
-    movie = response.json()
+    try:
+        response = requests.get(
+            f"{BASE_URL}{random_movie_id}?api_key={API_KEY}", timeout=8
+        )
+        response.raise_for_status()
+        movie = response.json()
+    except Exception as e:
+        return jsonify({"error": "Failed to fetch movie", "details": str(e)}), 502
 
     wiki_link = get_wikipedia_link(movie["title"])
     reviews = Review.query.filter_by(movie_id=random_movie_id).all()
@@ -402,8 +409,12 @@ def get_random_movie():
             "id": movie["id"],
             "title": movie["title"],
             "tagline": movie.get("tagline", ""),
-            "genres": [genre["name"] for genre in movie.get("genres", [])],
+            "genres": [
+                {"id": g.get("id"), "name": g.get("name")}
+                for g in movie.get("genres", [])
+            ],
             "poster_path": movie["poster_path"],
+            "overview": movie.get("overview", ""),
             "wiki_link": wiki_link,
             "reviews": [
                 {
@@ -489,20 +500,31 @@ def _movie_cache_key():
 @cache.cached(timeout=300, key_prefix=_movie_cache_key)
 @app.route("/api/movie/<int:movie_id>", methods=["GET"])
 def get_movie(movie_id):
-    response = requests.get(f"{BASE_URL}{movie_id}?api_key={API_KEY}")
-    movie = response.json()
-    print(movie)
+    try:
+        tmdb_resp = requests.get(
+            f"{BASE_URL}{movie_id}?api_key={API_KEY}", timeout=8
+        )
+        if tmdb_resp.status_code == 404:
+            return jsonify({"error": "Movie not found"}), 404
+        tmdb_resp.raise_for_status()
+        movie = tmdb_resp.json()
+    except Exception as e:
+        return jsonify({"error": "Failed to fetch movie", "details": str(e)}), 502
 
-    wiki_link = get_wikipedia_link(movie["title"])
+    wiki_link = get_wikipedia_link(movie.get("title", ""))
     reviews = Review.query.filter_by(movie_id=movie_id).all()
 
     return jsonify(
         {
-            "id": movie["id"],
-            "title": movie["title"],
+            "id": movie.get("id", movie_id),
+            "title": movie.get("title", "Untitled"),
             "tagline": movie.get("tagline", ""),
-            "genres": [genre["name"] for genre in movie.get("genres", [])],
-            "poster_path": movie["poster_path"],
+            "genres": [
+                {"id": g.get("id"), "name": g.get("name")}
+                for g in movie.get("genres", [])
+            ],
+            "poster_path": movie.get("poster_path"),
+            "overview": movie.get("overview", ""),
             "wiki_link": wiki_link,
             "reviews": [
                 {

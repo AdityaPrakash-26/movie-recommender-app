@@ -9,19 +9,19 @@ export async function loader({ request }: LoaderFunctionArgs) {
   try {
     const res = await fetch("http://server:8080/api/auth-status", { headers: { cookie } });
     const data = await res.json();
-    if (data.isAuthenticated) return redirect("/movie");
+    if (data.isAuthenticated) return redirect("/explore");
   } catch {}
   return null;
 }
 
 export default function Landing() {
-  // Client-side safety: if already authenticated, push to /movie
+  // Client-side safety: if already authenticated, push to /explore
   useEffect(() => {
     fetch("/api/auth-status", { credentials: "include" })
       .then((r) => r.json())
       .then((d) => {
         if (d?.isAuthenticated) {
-          window.location.replace("/movie");
+          window.location.replace("/explore");
         }
       })
       .catch(() => {});

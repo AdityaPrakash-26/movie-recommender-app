@@ -12,9 +12,9 @@ export async function checkAuth(): Promise<{ isAuthenticated: boolean; username?
   }
 }
 
-export async function fetchMovie() {
+export async function fetchExplore() {
   try {
-    const response = await fetch(`${API_URL}/movie`, {
+    const response = await fetch(`${API_URL}/explore`, {
       method: "GET",
       credentials: "include",
     });
@@ -25,7 +25,7 @@ export async function fetchMovie() {
 
     return await response.json();
   } catch (error) {
-    console.error("Error fetching movie:", error);
+    console.error("Error fetching explore movie:", error);
     return null;
   }
 }
