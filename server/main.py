@@ -71,6 +71,14 @@ try:
 except Exception:
     redis_client = None
 
+# Top-N movie cache config (for frequently accessed movies)
+TOP_MOVIE_CACHE_SIZE = int(os.getenv("TOP_MOVIE_CACHE_SIZE", "200"))
+TOP_MOVIE_TTL_SECS = int(os.getenv("TOP_MOVIE_TTL_SECS", "3600"))  # 1 hour default
+TOP_MOVIE_ZSET = "movie:views"  # sorted set of movie_id -> view count
+
+def _top_movie_key(movie_id: int) -> str:
+    return f"topmovie:{movie_id}"
+
 # Cognito config
 COGNITO_REGION = os.getenv("COGNITO_REGION", "us-east-2")
 COGNITO_USER_POOL_ID = os.getenv("COGNITO_USER_POOL_ID")
@@ -500,6 +508,16 @@ def _movie_cache_key():
 @cache.cached(timeout=300, key_prefix=_movie_cache_key)
 @app.route("/api/movie/<int:movie_id>", methods=["GET"])
 def get_movie(movie_id):
+    # Fast-path: if we maintain a dedicated Redis cache for top movies, try to serve it first
+    if redis_client is not None:
+        try:
+            cached = redis_client.get(_top_movie_key(movie_id))
+            if cached:
+                data = json.loads(cached)
+                return jsonify(data)
+        except Exception:
+            # Ignore cache errors and continue with normal flow
+            pass
     try:
         tmdb_resp = requests.get(
             f"{BASE_URL}{movie_id}?api_key={API_KEY}", timeout=8
@@ -520,29 +538,56 @@ def get_movie(movie_id):
     current_user_id = sess.get("user_id") if sess else None
     current_display_name = sess.get("display_name") if sess else None
 
-    return jsonify(
-        {
-            "id": movie.get("id", movie_id),
-            "title": movie.get("title", "Untitled"),
-            "tagline": movie.get("tagline", ""),
-            "genres": [
-                {"id": g.get("id"), "name": g.get("name")}
-                for g in movie.get("genres", [])
-            ],
-            "poster_path": movie.get("poster_path"),
-            "overview": movie.get("overview", ""),
-            "wiki_link": wiki_link,
-            "reviews": [
-                {
-                    "username": rev.user.username,
-                    "display_name": (current_display_name if current_user_id and rev.user_id == current_user_id else None) or rev.user.username,
-                    "rating": rev.rating,
-                    "comment": rev.comment,
-                }
-                for rev in reviews
-            ],
-        }
-    )
+    payload = {
+        "id": movie.get("id", movie_id),
+        "title": movie.get("title", "Untitled"),
+        "tagline": movie.get("tagline", ""),
+        "genres": [
+            {"id": g.get("id"), "name": g.get("name")}
+            for g in movie.get("genres", [])
+        ],
+        "poster_path": movie.get("poster_path"),
+        "overview": movie.get("overview", ""),
+        "wiki_link": wiki_link,
+        "reviews": [
+            {
+                "username": rev.user.username,
+                "display_name": (current_display_name if current_user_id and rev.user_id == current_user_id else None) or rev.user.username,
+                "rating": rev.rating,
+                "comment": rev.comment,
+            }
+            for rev in reviews
+        ],
+    }
+
+    # Track access frequency and cache top-N movies in Redis
+    if redis_client is not None:
+        try:
+            # Increment view count for this movie
+            redis_client.zincrby(TOP_MOVIE_ZSET, 1, str(movie_id))
+            rank = redis_client.zrevrank(TOP_MOVIE_ZSET, str(movie_id))
+            if rank is not None and rank < TOP_MOVIE_CACHE_SIZE:
+                # Cache/refresh payload for top-N items
+                redis_client.setex(_top_movie_key(movie_id), TOP_MOVIE_TTL_SECS, json.dumps(payload))
+                # Opportunistic prune: remove cached payloads beyond top-N (limit per request)
+                try:
+                    tail_ids = redis_client.zrevrange(TOP_MOVIE_ZSET, TOP_MOVIE_CACHE_SIZE, -1)
+                    if tail_ids:
+                        tail_ids = tail_ids[:50]  # cap deletes per request
+                        with redis_client.pipeline() as pipe:
+                            for mid in tail_ids:
+                                try:
+                                    mid_int = int(mid)
+                                except Exception:
+                                    mid_int = mid
+                                pipe.delete(_top_movie_key(mid_int))
+                            pipe.execute()
+                except Exception:
+                    pass
+        except Exception:
+            pass
+
+    return jsonify(payload)
 
 
 @app.route("/api/login", methods=["POST"])
@@ -604,6 +649,12 @@ def get_user_reviews():
 
     user_reviews = Review.query.filter_by(user_id=user.id).all()
 
+            # Invalidate dedicated Redis top-N cache for this movie
+            try:
+                if redis_client is not None:
+                    redis_client.delete(_top_movie_key(int(movie_id)))
+            except Exception:
+                pass
     reviews_with_titles = []
     for review in user_reviews:
         response = requests.get(
@@ -644,6 +695,11 @@ def delete_review(review_id):
             cache.delete(f"movie_{movie_id}")
         except Exception:
             pass
+        try:
+            if redis_client is not None:
+                redis_client.delete(_top_movie_key(int(movie_id)))
+        except Exception:
+            pass
         return jsonify({"message": "Review deleted"})
     except Exception as e:
         print(e)
@@ -673,6 +729,15 @@ def update_reviews():
         cache.delete("random_movie")
         for mid in affected_movie_ids:
             cache.delete(f"movie_{mid}")
+    except Exception:
+        pass
+    # Invalidate dedicated Redis top-N cache for affected movies
+    try:
+        if redis_client is not None:
+            with redis_client.pipeline() as pipe:
+                for mid in affected_movie_ids:
+                    pipe.delete(_top_movie_key(int(mid)))
+                pipe.execute()
     except Exception:
         pass
     return jsonify({"message": "Reviews updated successfully"})
