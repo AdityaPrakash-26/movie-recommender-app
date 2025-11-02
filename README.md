@@ -1,6 +1,6 @@
 # Movie Explorer
 
-View deployment [here](https://movie-recommender-app-gyxv.onrender.com/)!
+View deployment [here](https://movie-app.aditya-prakash.me/)!
 
 Movie Explorer is a full‐stack web application built with Flask (Python) on the backend and Remix (React‐based) on the frontend, using PostgreSQL. It fetches random movie details from The Movie Database (TMDb) and links to Wikipedia for expanded film information.
 
